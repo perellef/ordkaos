@@ -68,7 +68,6 @@ class Filhandterer:
 
         credentials = service_account.Credentials.from_service_account_info({
                 "type": "service_account",
-                "project_id": "testnavn",
                 "project_id": os.environ.get("GOOGLE_PROJECT_ID"),
                 "private_key_id": os.environ.get("GOOGLE_PRIVATE_KEY_ID"),
                 "private_key": os.environ.get("GOOGLE_PRIVATE_KEY").replace("\\n", "\n"),
