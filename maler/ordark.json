@@ -1,0 +1,18 @@
+{
+    "hovedspråk": "norsk",
+    "målspråk": "engelsk",
+
+    "excel": {
+      "filnavn": "Mal.xlsx",
+      "les-fra": true,
+      "skriv-til": true
+    },
+    
+    "googleark": {
+      "fil-id": "",
+      "les-fra": false,
+      "skriv-til": false
+    },
+
+    "ordliste-ark": "Ordliste"
+}

@@ -1,0 +1,7 @@
+/kode/__pycache__/*
+/mine-gloser/kategorier.json
+/mine-gloser/ordark.json
+/mine-gloser/*.xlsx
+/mine-gloser/*.xlsm
+/mine-gloser/*.xltx
+/mine-gloser/*.xltm

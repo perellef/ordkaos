@@ -1,0 +1,17 @@
+{
+  "hovedkategorier": {
+    "subs": "Substantiv",
+    "verb": "Verb"
+  },
+
+  "underkategorier": {
+    "subs": {
+      "hus": ["House","Hus"],
+      "fremk": ["-","Fremkomstmiddel"]
+    },
+    "verb": {
+      "å gjøre": ["To do","Å gjøre"],
+      "å skje": ["To happen","Å skje"]
+    }
+  }
+}
