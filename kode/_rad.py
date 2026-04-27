@@ -50,7 +50,7 @@ class Rad:
         return self.__kategori.count("/") != 1
 
     def har_sist_løst_på_feil_format(self):
-        return any(dato != '' and dato.count("/") != 2 for dato in (self.__sist_løst1+";"+self.__sist_løst2).split(";"))
+        return any(dato.strip() != '' and dato.count("/") != 2 for dato in (self.__sist_løst1+";"+self.__sist_løst2).split(";"))
 
     def har_elo_som_ikke_matcher_antall_gloser(self):
         return any((

@@ -92,7 +92,7 @@ def kommandolokke():
         print(f"\n[+] {len(glosegrupper)} glosegrupper valgt.\nGår videre.")
 
         sporsmalsskille(2)
-        print(f"Hvilken vei vil du oversette?\n 1) {malsprak} -> {hovedsprak}\n 2) {hovedsprak} -> {malsprak}")
+        print(f"Hvilken vei vil du oversette?\n 1) {hovedsprak} -> {malsprak}\n 2) {malsprak} -> {hovedsprak}")
         
         while True:
             svar = input("svar: ")
