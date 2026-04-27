@@ -1,79 +1,45 @@
+from datetime import datetime
 
 class Glose:
 
-    def __init__(self, sprak, sprak1_ord, sprak2_ord, kategorier, tagger):
+    def __init__(self, glosegruppe, fra, til, sist_løst, elo, fra_eksempel, til_eksempel, kategori):
+        self.__glosegruppe = glosegruppe
+        self.__fra = fra
+        self.__til = til
+        self.__sist_løst = sist_løst
+        self.__elo = elo
+        self.__fra_eksempel = fra_eksempel
+        self.__til_eksempel = til_eksempel
+        self.__kategori = kategori
+        self.__er_tvetydig = False
 
-        self._ord = {
-            sprak._malsprak: sprak2_ord,
-            sprak._hovedsprak: sprak1_ord,
-        }
+    def marker_tvetydig(self):
+        self.__er_tvetydig = True
 
-        self._kategorier = kategorier
-        self._tagger = tagger
+    def sett_elo(self, ny_elo):
+        self.__elo = ny_elo
 
-    def hent_score(self):
-        return sum(ord.hent_elo()/2 for ord in self._ord.values())
-        
-    def hent_ord(self, sprak, streng=False):
-        ord = self._ord[sprak]
-        if streng:
-            return str(ord)
-        return ord.hent_navn()
-
-    def hent_elo(self, sprak):
-        return self._ord[sprak].hent_elo()
+    def forny_sist_løst(self):
+        self.__sist_løst = datetime.today().strftime("%d/%m/%y")
     
-    def hent_eksempel(self, sprak, skjul_ord=False):
-        return self._ord[sprak].hent_eksempel(skjul_ord=skjul_ord)
-    
-    def hent_kategorier(self, streng=False):
-        if streng:
-            return ', '.join(self._kategorier)
-        return self._kategorier
-    
-    def sett_elo(self, sprak, ny_elo):
-        self._ord[sprak].sett_elo(ny_elo)
-    
-    def er_kategori(self,hovedkat,underkat=None):
-        if underkat==None:
-            for kat in self._kategorier:
-                hkat = kat.split("/")[0]
-                if hkat==hovedkat:
-                    return True
-        else:
-            kateg = hovedkat+"/"+underkat
-            for kat in self._kategorier:
-                if kateg==kat:
-                    return True
-        return False
-    
-    def har_tag(self, tag):
-        return tag in self._tagger
+    def sist_løst_som_tall(self):
+        if self.__sist_løst == '':
+            return 0
+        return int(''.join(reversed(self.__sist_løst.split("/"))))
 
-    def hent_som_rad(self):
-        rad = []
+    def fra(self): return self.__fra
+    def ord_til(self): return self.__til
+    def sist_løst(self): return self.__sist_løst
+    def elo(self): return self.__elo
+    def eksempel_fra(self): return self.__fra_eksempel
+    def eksempel_til(self): return "[ ___ ]".join([e for b in self.__til_eksempel.split("[") for e in b.split("]")][::2])
+    def kategori(self): return self.__kategori
+    def er_tvetydig(self): return self.__er_tvetydig
 
-        attributter = (
-            lambda x: str(x),
-            lambda x: x.hent_elo(),
-            lambda x: x.hent_eksempel(),
-        )
-
-        for attributt in attributter:
-            for ord in self._ord.values():
-                rad.append(attributt(ord))
-
-        rad.append(self.hent_kategorier(streng=True))
-        rad.append('/ '.join(self._tagger))
-
-        return rad
-
-    def hent_som_kortrad(self):
-        return [str(ord) for ord in self._ord.values()]
+    def motsatte_oversettelser(self):
+        if self in self.__glosegruppe.høyregloser():
+            return self.__glosegruppe.venstregloser()
+        return self.__glosegruppe.høyregloser()
 
     def __str__(self):
-        ord1,ord2 = self.hent_som_kortrad()
-        return f"{ord1} - {ord2}, Score: {self.hent_score()}"
-    
-    def er_lik(self, glose2):
-        return all((self._ord[sprak] == glose2._ord[sprak]) for sprak in self._ord)
+        return f"{'/'.join(self.__fra)} -> {'/'.join(self.__til)}"

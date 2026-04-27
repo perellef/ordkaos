@@ -1,27 +1,20 @@
-from _ord import Ord
-from _glose import Glose
+from _rad import Rad
+from _glosegruppe import Glosegruppe
 from _ordliste import Ordliste
 
-import re
-
 # generelt
-radstart = 4
-kolstart = 2 # kolonne B
+RADSTART = 4
+KOLSTART = 2 # kolonne B
 
 # ordliste
-radstorrelse_ordliste = 8
-fanefarge_ordliste = "5C8EDE"
+RADSTØRRELSE_ORDLISTE = 10
+FANEFARGE_ORDLISTE = "5C8EDE"
 
 # katliste
-rad_tittel = 2
-kat_avstand = 1
-radstorrelse_kateg = 2
-fanefarge_katliste = "9FC5E8"
-
-
-def er_float(string):
-    pattern = r'^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$'
-    return bool(re.match(pattern, string))
+RAD_TITTEL = 2
+KAT_AVSTAND = 1
+RADSTØRRELSE_KATEG = 2
+FANEFARGE_KATLISTE = "9FC5E8"
 
 class Dataprosessering:
 
@@ -29,126 +22,90 @@ class Dataprosessering:
     def hent_ordliste_fra_ordark(datasenter):
         filhandterer = datasenter._filhandterer
 
-        ordliste = Dataprosessering.__lag_ordliste(datasenter, filhandterer.les_ordark)
+        ordliste = Dataprosessering.__lag_ordliste(filhandterer.les_ordark)
         
         if (filhandterer.les_ordark2 is not None):
-            ordliste2 = Dataprosessering.__lag_ordliste(datasenter, filhandterer.les_ordark2)
+            ordliste2 = Dataprosessering.__lag_ordliste(filhandterer.les_ordark2)
+            print()
+            
+            Dataprosessering.__verifiser_at_største(ordliste, ordliste2)
+        else:
+            print()
+            
+        print('\n'.join(ordliste.parse_errors()))
 
-            Dataprosessering.__verifiser_at_storste(ordliste, ordliste2)
-
-        print('\n'.join(ordliste._veiledning))
         return ordliste
 
     @staticmethod
-    def __lag_ordliste(datasenter, les_ordark):
-        ordark = datasenter._ordark
+    def __lag_ordliste(les_ordark):
+        orddata = [rad[KOLSTART-1:KOLSTART-1+RADSTØRRELSE_ORDLISTE] for rad in les_ordark()]
 
-        hovedsprak = ordark["hovedspråk"]
-        malsprak = ordark["målspråk"]
-
-        orddata = [rad[kolstart-1:kolstart-1+radstorrelse_ordliste] for rad in les_ordark()]
-
-        ovre_marg = orddata[:radstart-1]
-        data = orddata[radstart-1:]
+        ovre_marg = orddata[:RADSTART-1]
+        data = orddata[RADSTART-1:]
         
-        spr1_ord = set()
-        spr2_ord = set()
-
         ufullstendig_data = []
-        gloser = []
-        veiledning = []
+        parse_errors = []
+        glosegrupper = set()
 
-        tomme_rader = []
-        for rad_indeks,rad in enumerate(data):
-            spr2,spr1,spr2_elo,spr1_elo,spr2_eks,spr1_eks,kateg,tag = rad
+        for rad_indeks,raddata in enumerate(data):
+            radnr = rad_indeks+RADSTART
+            rad = Rad(radnr, raddata)
 
-            spr1_elo = str(spr1_elo).replace(",",".")
-            spr2_elo = str(spr2_elo).replace(",",".")
-
-            radnr = rad_indeks+radstart
-            if all((el == '' for el in rad)):
-                if len(tomme_rader)>0:
-                    if (isinstance(tomme_rader[-1],list)):
-                        if (tomme_rader[-1][-1] == radnr-1):
-                            tomme_rader[-1][-1] += 1
-                            continue
-                    if (tomme_rader[-1] == radnr-1):
-                        tomme_rader[-1] = [tomme_rader[-1], tomme_rader[-1]+1]
-                        continue
-                tomme_rader.append(radnr)
+            if rad.er_tom():
                 continue
 
-
-            if '' in [spr1,spr2,kateg]:
-                veiledning.append(f"MERKNAD: Rad {radnr}: {spr2} - {spr1} ({kateg}) er ufullstendig, og legges øverst i ordlisten.\n")
-                ufullstendig_data.append(rad)
+            if rad.er_ufullstendig():
+                parse_errors.append(f"OBS: {rad} er ufullstendig.")
+                ufullstendig_data.append(raddata)
                 continue
 
-            if spr1_elo == '':
-                veiledning.append(f"NOTAT: Rad {radnr}: {spr2} - {spr1} ({kateg}) ble gitt {hovedsprak}->{malsprak} elo 5 som resultat av manglende verdi.")
-                spr1_elo = '5'
-            if spr2_elo == '':
-                veiledning.append(f"NOTAT: Rad {radnr}: {spr2} - {spr1} ({kateg}) ble gitt {malsprak}->{hovedsprak} elo 5 som resultat av manglende verdi.")
-                spr2_elo = '5'
-
-            if not er_float(spr1_elo):
-                veiledning.append(f"MERKNAD: Rad {radnr}: {spr2} - {spr1} ({kateg}) har uforståelig {hovedsprak}->{malsprak} elo, og legges øverst i ordlisten.")
-                ufullstendig_data.append(rad)
+            if rad.har_elo_som_ikke_matcher_antall_gloser():
+                parse_errors.append(f'OBS: {rad} har elo som ikke matcher antall gloser.')
+                ufullstendig_data.append(raddata)
                 continue
-            if not er_float(spr2_elo):
-                veiledning.append(f"MERKNAD: Rad {radnr}: {spr2} - {spr1} ({kateg}) har uforståelig {malsprak}->{hovedsprak} elo, og legges øverst i ordlisten.")
-                ufullstendig_data.append(rad)
+
+            if rad.har_sist_løst_som_ikke_matcher_antall_gloser():
+                parse_errors.append(f'OBS: {rad} har "sist løst" som ikke matcher antall gloser.')
+                ufullstendig_data.append(raddata)
+                continue
+
+            if rad.har_elo_på_feil_format():
+                parse_errors.append(f"OBS: {rad} har elo på feil format.")
+                ufullstendig_data.append(raddata)
                 continue
             
-            spr1 = spr1.strip()
-            spr2 = spr2.strip()
+            if rad.har_sist_løst_på_feil_format():
+                parse_errors.append(f'OBS: {rad} har "sist løst" på feil format.')
+                ufullstendig_data.append(raddata)
+                continue
+            
+            if rad.har_kategori_på_feil_format():
+                parse_errors.append(f"OBS: {rad} har kategori på ukjent format.")
+                ufullstendig_data.append(raddata)
+                continue
 
-            if spr1 in spr1_ord:
-                veiledning.append(f'MERKNAD: "{spr1}" er ikke entydig fra {hovedsprak}->{malsprak}')
-            if spr2 in spr2_ord:
-                veiledning.append(f'MERKNAD: "{spr2}" er ikke entydig fra {malsprak}->{hovedsprak}')
+            glosegrupper.add(Glosegruppe(rad)) 
 
-            spr1_ord.add(spr1)
-            spr2_ord.add(spr2)
-
-            sprak1_ord = Ord(spr1, spr1_elo, spr1_eks)
-            sprak2_ord = Ord(spr2, spr2_elo, spr2_eks)
-
-            kat = re.split(r', ',kateg)
-
-            glose = Glose(datasenter._sprak, sprak1_ord, sprak2_ord, kat, tag.split("/ "))
-            gloser.append(glose)
-
-
-        if len(tomme_rader)>0:
-            tom_fjerning = 'NOTAT: Tomme rader ble fjernet fra rad: '
-            for el in tomme_rader:
-                if isinstance(el, list):
-                    tom_fjerning += f'{el[0]}-{el[1]}, '
-                else:
-                    tom_fjerning += f'{el}, '
-            veiledning.insert(0,tom_fjerning)
-
-        return Ordliste(ovre_marg, ufullstendig_data, gloser, veiledning)
+        return Ordliste(ovre_marg, ufullstendig_data, glosegrupper, parse_errors)
     
     @staticmethod
-    def __verifiser_at_storste(ordliste, ordliste2):
-        print("\n========================\n")
+    def __verifiser_at_største(ordliste, ordliste2):
+        print("========================\n")
         print("Sammenlikner excel mot googleark ordliste for å prevantivt unngå tap av data.\n")
 
-        nye = sum(1 for glose in ordliste if not any(glose.er_lik(gl) for gl in ordliste2))
-        mister = sum(1 for glose in ordliste2 if not any(glose.er_lik(gl) for gl in ordliste))
+        nye = ordliste.glosegrupper().difference(ordliste2.glosegrupper())
+        mister = ordliste2.glosegrupper().difference(ordliste.glosegrupper())
 
-        print(f"Nye: {nye}")
-        print(f"Mister: {mister}")
-        print(f"Felles: {len(ordliste)-nye}\n")
+        print(f"Nye: {len(nye)}")
+        print(f"Mister: {len(mister)}")
+        print(f"Felles: {len(ordliste.glosegrupper())-len(nye)}\n")
 
-        if (mister == 0):
+        if len(mister) == 0:
             print("Ingen gloser mistes. Går videre.")
             print("\n========================\n")
             return
         
-        print('Avslutt ved å trykke enter hvis du er misfornøyd med dette. Svar "neste" for å gå videre.\n')
+        print(f'Skriv "MISTER {len(mister)} GLOSER" for å godta overskriving.\nTrykk ENTER for å avbryte.\n')
         while True:
             svar = input("Svar: ")
             if svar == '':
@@ -156,8 +113,8 @@ class Dataprosessering:
                 print("\n========================")
                 import sys
                 sys.exit()
-            elif svar == "neste":
-                print("\n========================\n")
+            elif svar == f"MISTER {len(mister)} GLOSER":
+                print("\n========================")
                 return
             print("Svaret lot seg ikke forstå.")
 
@@ -171,80 +128,73 @@ class Dataprosessering:
         data = {}
 
         # handterer ordliste data
+        glosegrupper = list(sorted(ordliste, key=lambda x: (x.kategori(), x.elo_gjennomsnitt())))
+        rader = [glosegruppe.som_rad() for glosegruppe in glosegrupper]
 
-        sortering = lambda x: (x.hent_kategorier(streng=True), x.hent_score())
-        gloser = list(sorted(ordliste._gloser, key=sortering))
-        gloserader = [glose.hent_som_rad() for glose in gloser]
-
-        ordliste_data = ordliste._ufullstendig_data + gloserader
+        ordliste_data = ordliste.ufullstendig_data() + rader
 
         # øvre marg
-        ordliste_data = ordliste._ovre_marg + ordliste_data
+        ordliste_data = ordliste.øvre_marg() + ordliste_data
 
         # nedre marg
         for j in range(4):
-            ordliste_data.append(radstorrelse_ordliste*[''])
+            ordliste_data.append(RADSTØRRELSE_ORDLISTE*[''])
 
         # venstre marg
-        for _ in range(kolstart-1):
+        for _ in range(KOLSTART-1):
             for rad in ordliste_data:
                 rad.insert(0,'')
 
-
-        data[filhandterer._ordark_navn] = (fanefarge_ordliste, ordliste_data)
+        data[filhandterer._ordark_navn] = (FANEFARGE_ORDLISTE, ordliste_data)
 
         # handterer kategori data
 
-        for hkat in kategorier.values():
-
-            underkategorier = hkat.hent_underkategorier()
-
-            glose_hoyde = max((len(uk.hent_gloser_som_kortrader()) for uk in underkategorier.values()), default=0)+4
+        for kategori, underkategorier in kategorier.items():
+            glose_hoyde = max(map(len, underkategorier.values()))+4
             kategoridata = [[] for _ in range(glose_hoyde)]
 
-            antall_kolonner = kolstart-1 + len(underkategorier)*(kat_avstand+radstorrelse_kateg)
+            antall_kolonner = KOLSTART-1 + len(underkategorier)*(KAT_AVSTAND+RADSTØRRELSE_KATEG)
 
             # venstre marg
-            for _ in range(kolstart-1):
+            for _ in range(KOLSTART-1):
                 for rad in kategoridata:
                     rad.insert(0,'')
 
             # øvre marg 
-            for _ in range(radstart-1):
+            for _ in range(RADSTART-1):
                 kategoridata.insert(0,antall_kolonner*[''])
 
             # glosene for hver underkategori
-            for i,uk in enumerate(underkategorier.values()):
-                glosekloss = uk.hent_gloser_som_kortrader()
+            for i,(tittel,glosegrupper) in enumerate(underkategorier.items()):
+                glosekloss = [e.kortrad() for e in glosegrupper]
 
                 # titler
-                k = kolstart-1+i*(radstorrelse_kateg+kat_avstand)
+                k = KOLSTART-1+i*(RADSTØRRELSE_KATEG+KAT_AVSTAND)
 
-                kategoridata[rad_tittel-1][k] = uk._sprak2_tittel
-                kategoridata[rad_tittel-1][k+1] = uk._sprak1_tittel
+                kategoridata[RAD_TITTEL-1][k] = tittel
 
                 # gloseklossene
                 for j,gloserad in enumerate(glosekloss):
-                    kategoridata[radstart-1+j].extend(gloserad)
+                    kategoridata[RADSTART-1+j].extend(gloserad)
 
                 # tomme felter på bunnen av gloseklossene
                 for j in range(glose_hoyde-len(glosekloss)):
-                    kategoridata[radstart-1+len(glosekloss)+j].extend(radstorrelse_kateg*[''])
+                    kategoridata[RADSTART-1+len(glosekloss)+j].extend(RADSTØRRELSE_KATEG*[''])
 
                 # tomme felter mellom gloseklossene
-                for rad in kategoridata[radstart-1:]:
-                    rad.extend(kat_avstand*[''])
+                for rad in kategoridata[RADSTART-1:]:
+                    rad.extend(KAT_AVSTAND*[''])
 
             hoyre_marg = 1
             # tomme felter mellom gloseklossene
-            for rad in kategoridata[radstart-1:]:
+            for rad in kategoridata[RADSTART-1:]:
                 rad.extend(hoyre_marg*[''])
 
             # nedre marg
             for j in range(4):
                 kategoridata.append((antall_kolonner+hoyre_marg)*[''])
 
-            data[hkat.hent_navn()] = (fanefarge_katliste, kategoridata)
+            data[kategori] = (FANEFARGE_KATLISTE, kategoridata)
 
 
         # skriv til ordark

@@ -10,7 +10,6 @@ import requests.exceptions
 import time
 import threading
 import queue
-import sys
 
 import os
 
@@ -37,13 +36,14 @@ class Filhandterer:
 
         if excel_les:
             if googleark_les:
-                print("NOTAT: Excel har blitt satt til å leses fra, da både excel og googleark var valgt.")
+                print("FEIL: Både excel og googleark var valgt til å leses fra. Avbryter.")
+                exit(1)
             self.les_ordark = self.les_excel
         elif googleark_les:
             self.les_ordark = self.les_googleark
         else:
-            print("FEIL: Applikasjonen lar seg ikke utføre da verken excel eller googleark var valgt til å leses fra.")
-            sys.exit()
+            print("FEIL: Verken excel eller googleark var valgt til å leses fra. Avbryter.")
+            exit(1)
 
         if excel_skriv:
             self.skriv_ordark.append(self.skriv_excel)
@@ -128,7 +128,7 @@ class Filhandterer:
         if not self.initialiser_excel("Oppdatering"):
             return
         
-        for arknavn,(fanefarge,data) in oppdateringer.items():
+        for arknavn, (fanefarge,data) in oppdateringer.items():
 
             if self.excel_har_ark(arknavn):
                 ark = self._excel_fil[arknavn]
@@ -140,6 +140,10 @@ class Filhandterer:
             for rad_indeks,rad in enumerate(data):
                 for kol_indeks,verdi in enumerate(rad):
                     ark.cell(row=rad_indeks+1, column=kol_indeks+1,value=verdi)
+                    
+            for rad_indeks in range(len(data)+1, ark.max_row + 1):
+                for kol_indeks in range(1, ark.max_column + 1):
+                    ark.cell(row = rad_indeks, column = kol_indeks).value = None
 
         self.brukerfeil_vent(PermissionError, "Oppdatering", self._excel_fil.save, self._excel_filnavn)
         print(f"[+] Excel-fil oppdatert.")
@@ -161,6 +165,7 @@ class Filhandterer:
         return ark.get_values()[:]
 
     def skriv_googleark(self, data):
+        raise ValueError("SKAL IKKE SKRIVE OVER FOR NÅ")
 
         if not self.initialiser_googleark("Oppdatering", kan_skippe_feil=True):
             return
@@ -232,10 +237,10 @@ class Filhandterer:
     def brukerfeil_vent(self, error, hensikt, kommando, *args, kan_skippe=False):
         
         if error == PermissionError:
-            eventuelt_varsel = f'\nVENTER: {hensikt} av Excel-fil er hindret fordi "{args[0]}" er åpen. Venter til filen lukkes.'
+            eventuelt_varsel = f'VENTER: {hensikt} av Excel-fil er hindret fordi "{args[0]}" er åpen. Venter til filen lukkes.\n'
 
         elif error in (google.auth.exceptions.TransportError, requests.exceptions.ConnectionError):
-            eventuelt_varsel = f'\nVENTER: {hensikt} av Google regneark er hindret fordi forbindelse til internett mangler. Venter til forbindelsen opprettes.'
+            eventuelt_varsel = f'VENTER: {hensikt} av Google regneark er hindret fordi forbindelse til internett mangler. Venter til forbindelsen opprettes.\n'
 
         try:
             return kommando(*args)

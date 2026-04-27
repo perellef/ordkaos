@@ -1,8 +1,8 @@
-from _sprak import Sprak
+from _språk import Språk
 from _filhandterer import Filhandterer
-from _hovedkategori import Hovedkategori
-
 from _dataprosessering import Dataprosessering
+
+from collections import defaultdict
 
 class Datasenter:
 
@@ -12,8 +12,10 @@ class Datasenter:
         self._sprak = self.__sett_sprak(self._ordark)
         self._filhandterer = self.__sett_filhandterer(self._ordark)
         self._ordliste = Dataprosessering.hent_ordliste_fra_ordark(self)
+        self._kategorier = self.__sett_kategorier()
+        self._tagger = self.__sett_tagger()
 
-        self._kategorier = self.__sett_kategorier(self._ordliste)
+        self.__marker_tvetydige_gloser()
 
     def oppdater_ordark(self):
         Dataprosessering.skriv_ordliste_til_ordark(self)
@@ -22,7 +24,7 @@ class Datasenter:
         hovedsprak = ordark["hovedspråk"]
         malsprak = ordark["målspråk"]
 
-        return Sprak(hovedsprak, malsprak)
+        return Språk(hovedsprak, malsprak)
 
     def __sett_filhandterer(self, ordark):
         ordliste_ark = ordark["ordliste-ark"]
@@ -31,42 +33,56 @@ class Datasenter:
 
         return Filhandterer(ordliste_ark, excel_specs, googleark_specs)
 
-    def __sett_kategorier(self, ordliste):
+    def __sett_kategorier(self):
+        kategorier = defaultdict(lambda: defaultdict(set))
+        for glosegruppe in self._ordliste.glosegrupper():
+            kategori, undergruppe = glosegruppe.kategori().split("/")
+            if kategori.lower() == "ordliste":
+                print("FEIL: Du kan ikke ha kategorien 'ordliste'. Avbryter.")
+                exit(1)
+            if kategori.lower() == "tag":
+                print("FEIL: Du kan ikke ha kategorien 'tag'. Avbryter.")
+                exit(1)
+            kategorier[kategori][undergruppe].add(glosegruppe)
 
-        kateg = Filhandterer.les_json("mine-gloser/kategorier.json")
-
-        # setter opp hovedkategorier
-        kategorier = {}
-        for hk_kort,hk in kateg["hovedkategorier"].items():
-            kategorier[hk_kort] = Hovedkategori(hk, hk_kort)
-
-        # setter opp underkategorier
-        for hk_kort, ukateg in kateg["underkategorier"].items():
-            hovedkategori = kategorier[hk_kort]
-            for (uk_kort,uk) in ukateg.items():
-                hovedkategori.legg_til_underkategori(uk_kort, *uk)
-
-        manglende_kat = set()
-
-        # legger til gloser i kategoriene
-        for glose in ordliste._gloser:
-            for kat in glose.hent_kategorier():
-                hk,uk = kat.split("/")
-
-                if hk not in kategorier:
-                    if hk not in manglende_kat:
-                        manglende_kat.add(hk)
-                        print(f'MERKNAD: Hovedkategorien "{hk}" er ikke spesifisert.')
-                    continue
-
-                hovedkategori = kategorier[hk]
-                underkategorier = hovedkategori.hent_underkategorier()
-                if uk not in underkategorier:
-                    if kat not in manglende_kat:
-                        manglende_kat.add(kat)
-                        print(f'MERKNAD: Kategorien "{kat}" er ikke spesifisert.')
-                    continue
-
-                underkategorier[uk].legg_til_glose(glose)
+        for kategori, undergrupper in kategorier.items():
+            for emne, grupper in undergrupper.items():
+                if len(grupper) <= 3:
+                    print(f'MERKNAD: Kun {len(grupper)} glosegruppe{"r" if len(grupper) > 1 else ""} har kategori "{kategori}/{emne}".') 
 
         return kategorier
+    
+    def __sett_tagger(self):
+        tagger = defaultdict(set)
+        for glosegruppe in self._ordliste.glosegrupper():
+            for tag in glosegruppe.tagger():
+                tagger[tag].add(glosegruppe)
+
+        for tag, grupper in tagger.items():
+            if len(grupper) <= 3:
+                print(f'MERKNAD: Kun {len(grupper)} glosegruppe{"r" if len(grupper) > 1 else ""} har tag "{tag}".') 
+
+        return tagger
+
+    def __marker_tvetydige_gloser(self):
+        for f_sidegloser in (lambda x: x.venstregloser(), lambda x: x.høyregloser()):
+            alle_sidegloser = defaultdict(list)
+
+            for glosegruppe in self._ordliste.glosegrupper():
+                for glose in f_sidegloser(glosegruppe):
+                    alle_sidegloser['/'.join(sorted(glose.fra()))].append(glose)
+
+            for fra, gloser in alle_sidegloser.items():
+                if len(gloser) == 1:
+                    continue
+                
+                kategorier = defaultdict(list)
+                for glose in gloser:
+                    glose.marker_tvetydig()
+                    kategorier[glose.kategori()].append(glose)
+
+                for kategori, kategorigloser in kategorier.items():
+                    if len(kategorigloser) == 1:
+                        continue
+
+                    print(f'VARSEL: Det er {len(kategorigloser)} gloser "{fra}" med identisk kategori: "{kategori}".')

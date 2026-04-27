@@ -1,6 +1,6 @@
 from _underkategori import Underkategori
 
-class Hovedkategori:
+class Kategori:
 
     def __init__(self, navn, kortnavn):
         self._kortnavn = kortnavn
