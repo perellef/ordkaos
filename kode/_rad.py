@@ -8,38 +8,38 @@ class Rad:
 
     def __init__(self, radnr, raddata):
         self.__radnr = radnr
-        self.__spr2 = str(raddata[0])
-        self.__spr1 = str(raddata[1])
-        self.__sist_løst2 = str(raddata[2]) if str(raddata[2]) != '' else ";"*self.__spr2.count(";")
-        self.__sist_løst1 = str(raddata[3]) if str(raddata[3]) != '' else ";"*self.__spr1.count(";")
-        self.__spr2_elo = str(raddata[4]).replace(",",".")
-        self.__spr1_elo = str(raddata[5]).replace(",",".")
-        self.__spr2_eks = str(raddata[6])
-        self.__spr1_eks = str(raddata[7])
+        self.__spr1 = str(raddata[0])
+        self.__spr2 = str(raddata[1])
+        self.__sist_løst1 = str(raddata[2]) if str(raddata[2]) != '' else ";"*self.__spr1.count(";")
+        self.__sist_løst2 = str(raddata[3]) if str(raddata[3]) != '' else ";"*self.__spr2.count(";")
+        self.__spr1_elo = str(raddata[4]).replace(",",".")
+        self.__spr2_elo = str(raddata[5]).replace(",",".")
+        self.__spr1_eks = str(raddata[6])
+        self.__spr2_eks = str(raddata[7])
         self.__kategori = str(raddata[8])
         self.__tagger = str(raddata[9])
 
     def __str__(self):
-        return f"Rad {self.__radnr}: {self.__spr2} - {self.__spr1} ({self.__kategori})"
+        return f"Rad {self.__radnr}: {self.__spr1} - {self.__spr2} ({self.__kategori})"
 
     def er_tom(self):
         return all((
-            self.__spr2 == '',
             self.__spr1 == '',
-            self.__spr2_elo == '',
+            self.__spr2 == '',
             self.__spr1_elo == '',
-            self.__spr2_eks == '',
+            self.__spr2_elo == '',
             self.__spr1_eks == '',
+            self.__spr2_eks == '',
             self.__kategori == '',
             self.__tagger == '',
         ))
     
     def er_ufullstendig(self):
         return all((
-            self.__spr2 == '',
             self.__spr1 == '',
-            self.__spr2_elo == '',
+            self.__spr2 == '',
             self.__spr1_elo == '',
+            self.__spr2_elo == '',
             self.__kategori == ''
         ))
         

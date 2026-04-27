@@ -4,13 +4,13 @@ from _glose import Glose
 class Glosegruppe:
     def __init__(self, rad):
         self.__rad = rad
-        self.__venstregloser = self.__lag_venstregloser(rad)
-        self.__høyregloser = self.__lag_høyregloser(rad)
+        self.__venstregloser = self.__lag_høyregloser(rad)
+        self.__høyregloser = self.__lag_venstregloser(rad)
 
-    def __lag_venstregloser(self, rad):
+    def __lag_høyregloser(self, rad):
         return self.__lag_gloser(rad.spr1, rad.sist_løst1, rad.spr1_elo, rad.spr2, rad.kategori, rad.spr1_eks, rad.spr2_eks)
     
-    def __lag_høyregloser(self, rad):
+    def __lag_venstregloser(self, rad):
         return self.__lag_gloser(rad.spr2, rad.sist_løst2, rad.spr2_elo, rad.spr1, rad.kategori, rad.spr2_eks, rad.spr1_eks)
 
     def __lag_gloser(self, f_spr1, f_sist_løst, f_spr1_elo, f_spr2, f_kategori, f_spr1_eks, f_spr2_eks):
