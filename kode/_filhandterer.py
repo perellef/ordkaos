@@ -165,7 +165,6 @@ class Filhandterer:
         return ark.get_values()[:]
 
     def skriv_googleark(self, data):
-        raise ValueError("SKAL IKKE SKRIVE OVER FOR NÅ")
 
         if not self.initialiser_googleark("Oppdatering", kan_skippe_feil=True):
             return
