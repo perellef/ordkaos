@@ -93,12 +93,18 @@ class Dataprosessering:
         print("========================\n")
         print("Sammenlikner excel mot googleark ordliste for å prevantivt unngå tap av data.\n")
 
-        nye = ordliste.glosegrupper().difference(ordliste2.glosegrupper())
-        mister = ordliste2.glosegrupper().difference(ordliste.glosegrupper())
+        fraark = {e.oversettelse_som_streng(): e.elo_og_sist_løst_som_streng() for e in ordliste.glosegrupper()}
+        tilark = {e.oversettelse_som_streng(): e.elo_og_sist_løst_som_streng() for e in ordliste2.glosegrupper()}
+
+        nye = set(fraark).difference(tilark)
+        mister = set(tilark).difference(fraark)
+
+        felles = set(fraark).intersection(tilark)
+        endrede_eloer_og_sist_løst = sum(1 for k in felles if fraark[k] != tilark[k])
 
         print(f"Nye: {len(nye)}")
         print(f"Mister: {len(mister)}")
-        print(f"Felles: {len(ordliste.glosegrupper())-len(nye)}\n")
+        print(f"Felles: {len(ordliste.glosegrupper())-len(nye)} (hvorav {endrede_eloer_og_sist_løst} har fått ny elo/sist løst)\n")
 
         if len(mister) == 0:
             print("Ingen gloser mistes. Går videre.")

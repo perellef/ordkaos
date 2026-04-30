@@ -23,7 +23,7 @@ class Glose:
         self.__sist_løst = datetime.today().strftime("%d/%m/%y")
     
     def sist_løst_som_tall(self):
-        if self.__sist_løst == '':
+        if self.__sist_løst.strip() == '':
             return 0
         return int(''.join(reversed(self.__sist_løst.split("/"))))
 

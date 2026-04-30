@@ -58,3 +58,15 @@ class Glosegruppe:
 
     def er_høyreglose(self, item):
         return item in self.__høyregloser
+
+    def oversettelse_som_streng(self):
+        return "; ".join(self.__rad.spr1()) + " - " + "; ".join(self.__rad.spr2())
+    
+    def elo_og_sist_løst_som_streng(self):
+        return (
+            '; '.join(map(lambda x: str(x.elo()).replace(".", ","), self.__venstregloser))
+            + " - " + '; '.join(map(lambda x: str(x.elo()).replace(".", ","), self.__høyregloser))
+            + " - " + '; '.join(map(lambda x: x.sist_løst(), self.__venstregloser))
+            + " - " + '; '.join(map(lambda x: x.sist_løst(), self.__høyregloser))
+        )
+        
